@@ -2,7 +2,8 @@
 Shared utilities for model evaluation, metric logging, and plot saving.
 Used by every model training script to keep results consistent and comparable.
 """
-
+import matplotlib
+matplotlib.use("Agg")
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -76,12 +77,14 @@ def evaluate_and_log(model_name, y_true, y_pred, y_proba):
         "pr_auc": pr_auc
     }])
 
-    if os.path.exists(METRICS_FILE):
-        row.to_csv(METRICS_FILE, mode="a", header=False, index=False)
-    else:
         os.makedirs(RESULTS_DIR, exist_ok=True)
-        row.to_csv(METRICS_FILE, mode="w", header=True, index=False)
-
+    if os.path.exists(METRICS_FILE):
+        existing = pd.read_csv(METRICS_FILE)
+        existing = existing[existing["model"] != model_name]  # drop old row for this model, if any
+        combined = pd.concat([existing, row], ignore_index=True)
+    else:
+        combined = row
+    combined.to_csv(METRICS_FILE, mode="w", header=True, index=False)
     print(f"Logged results to {METRICS_FILE}")
     print(f"Plots saved to {RESULTS_DIR}/{model_name}/")
 
